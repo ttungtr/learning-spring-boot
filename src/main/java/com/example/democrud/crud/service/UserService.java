@@ -15,4 +15,6 @@ public interface UserService {
 
     List<UserResponseDto> getAllUsers();
 
+    UserResponseDto getCurrentUser(String username);
+
 }

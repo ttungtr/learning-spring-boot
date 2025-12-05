@@ -1,30 +1,26 @@
 package com.example.democrud.crud.entity;
 
+
 import jakarta.persistence.*;
 import lombok.*;
 
-
 @Entity
-@Table(name= "t_user")
+@Table(name= "t_category")
 @Builder
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-
-public class UserEntity extends AbstractAuditingEntity {
+public class CategoryEntity extends AbstractAuditingEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column
-    private String firstName;
-    @Column
-    private String lastName;
-    @Column
-    private String email;
+    private String name;
 
-    @Column
-    private String password;
+    @Column(name = "is_deleted")
+    @Builder.Default
+    private Boolean isDeleted = false;
 }

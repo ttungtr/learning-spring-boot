@@ -1,7 +1,12 @@
 package com.example.democrud.crud.common;
 
+import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
+
+
+
+@Getter
 public class ApiException extends RuntimeException {
     private final HttpStatus status;
 
@@ -10,7 +15,4 @@ public class ApiException extends RuntimeException {
         this.status = status;
     }
 
-    public HttpStatus getStatus() {
-        return status;
-    }
 }

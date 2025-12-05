@@ -5,6 +5,8 @@ import com.example.democrud.crud.dto.response.ChatMessageResponseDto;
 import com.example.democrud.crud.service.ChatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,9 +20,9 @@ class ChatController {
     private final ChatService chatService;
 
     @PostMapping("/send")
-    public ResponseEntity<ChatMessageResponseDto> send(@RequestParam("senderId") Long senderId,
+    public ResponseEntity<ChatMessageResponseDto> send(@AuthenticationPrincipal UserDetails userDetails,
                                                        @Validated @RequestBody ChatMessageRequestDto request) {
-        return ResponseEntity.ok(chatService.sendMessage(senderId, request));
+        return ResponseEntity.ok(chatService.sendMessage(userDetails.getUsername(), request));
     }
 
     @GetMapping("/conversation")
@@ -35,6 +37,8 @@ class ChatController {
         chatService.markConversationAsRead(userId, otherId);
         return ResponseEntity.ok().build();
     }
+
+
 }
 
 

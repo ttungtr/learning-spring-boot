@@ -54,4 +54,20 @@ public class UserServiceImpl  implements UserService {
         List<UserEntity> list = userRepository.findAll();
         return list.stream().map(userMapper::userToUserResponseDto).collect(Collectors.toList());
     };
+
+
+    @Override
+    public UserResponseDto getCurrentUser(String email) {
+        UserEntity user = userRepository.findByEmail(email);
+       if (user == null) {
+              throw new RuntimeException("User not found");
+         } else {
+              return UserResponseDto.builder()
+                     .id(user.getId())
+                     .email(user.getEmail())
+                     .firstName(user.getFirstName())
+                     .lastName(user.getLastName())
+                     .build();
+       }
+    }
 }

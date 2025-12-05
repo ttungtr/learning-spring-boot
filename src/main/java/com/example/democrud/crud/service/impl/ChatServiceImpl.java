@@ -11,7 +11,7 @@ import com.example.democrud.crud.service.ChatService;
 import com.example.democrud.crud.service.mapper.ChatMessageMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
+import com.example.democrud.crud.websocket.WebSocketSessionManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,13 +25,15 @@ public class ChatServiceImpl implements ChatService {
     private final ChatMessageRepository chatMessageRepository;
     private final UserRepository userRepository;
     private final ChatMessageMapper chatMessageMapper;
-    private final SimpMessagingTemplate messagingTemplate;
+    private final WebSocketSessionManager sessionManager;
 
     @Override
     @Transactional
-    public ChatMessageResponseDto sendMessage(Long senderId, ChatMessageRequestDto request) {
-        UserEntity sender = userRepository.findById(senderId)
-                .orElseThrow(() -> new ApiException("Sender not found", HttpStatus.BAD_REQUEST));
+    public ChatMessageResponseDto sendMessage(String senderUsername, ChatMessageRequestDto request) {
+        UserEntity sender = userRepository.findByEmail(senderUsername);
+        if (sender == null) {
+            throw new ApiException("Sender not found", HttpStatus.BAD_REQUEST);
+        }
         UserEntity recipient = userRepository.findById(request.getRecipientId())
                 .orElseThrow(() -> new ApiException("Recipient not found", HttpStatus.BAD_REQUEST));
 
@@ -43,8 +45,10 @@ public class ChatServiceImpl implements ChatService {
 
         ChatMessageResponseDto dto = chatMessageMapper.toDto(saved);
 
-        // push to recipient topic
-        messagingTemplate.convertAndSend("/topic/chat." + recipient.getId(), dto);
+        // Push to recipient via raw WebSocket
+        System.out.println("Pushing message to user " + recipient.getId() + " via WebSocket");
+        sessionManager.pushMessageToUser(recipient.getId(), dto);
+        System.out.println("Message pushed successfully");
 
         return dto;
     }
@@ -61,6 +65,8 @@ public class ChatServiceImpl implements ChatService {
     public void markConversationAsRead(Long userId, Long otherId) {
         chatMessageRepository.markConversationAsRead(userId, otherId);
     }
+
+
 }
 
 

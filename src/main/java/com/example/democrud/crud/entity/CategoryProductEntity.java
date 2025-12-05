@@ -5,26 +5,21 @@ import lombok.*;
 
 
 @Entity
-@Table(name= "t_user")
+@Table(name= "t_category_product")
 @Builder
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-
-public class UserEntity extends AbstractAuditingEntity {
+public class CategoryProductEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column
-    private String firstName;
-    @Column
-    private String lastName;
-    @Column
-    private String email;
+    @ManyToOne(fetch = FetchType.LAZY)
+    private CategoryEntity category;
 
-    @Column
-    private String password;
+    @ManyToOne(fetch = FetchType.LAZY)
+    private ProductEntity product;
 }

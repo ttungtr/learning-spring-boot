@@ -4,6 +4,7 @@ import com.example.democrud.crud.common.ApiException;
 import com.example.democrud.crud.dto.request.AuthRequest;
 import com.example.democrud.crud.dto.request.RegisterRequest;
 import com.example.democrud.crud.dto.response.AuthResponse;
+import com.example.democrud.crud.dto.response.UserResponseDto;
 import com.example.democrud.crud.entity.UserEntity;
 import com.example.democrud.crud.repository.UserRepository;
 import com.example.democrud.crud.security.JwtTokenUtil;
@@ -56,6 +57,15 @@ public class AuthServiceImpl implements AuthService {
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(request.getUsername());
         String token = jwtTokenUtil.generateToken(userDetails);
-        return AuthResponse.builder().token(token).build();
+
+        UserEntity userEntity = userRepository.findByEmail(userDetails.getUsername());
+
+        UserResponseDto user = UserResponseDto.builder()
+                .id(userEntity.getId())
+                .email(userEntity.getEmail())
+                .firstName(userEntity.getFirstName())
+                .lastName(userEntity.getLastName())
+                .build();
+        return AuthResponse.builder().accessToken(token).refreshToken(token).user(user).build();
     }
 }

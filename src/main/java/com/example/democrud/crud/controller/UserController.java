@@ -7,6 +7,8 @@ import com.example.democrud.crud.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -37,6 +39,13 @@ public class UserController {
     public ResponseEntity<UserResponseDto> getUserById(@PathVariable Long id){
         UserResponseDto user = userService.getUserById(id);
 
+        return ResponseEntity.ok().body(user);
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserResponseDto> getCurrentUser(@AuthenticationPrincipal UserDetails userDetails) {
+      System.out.println("userDetails: " + userDetails);
+        UserResponseDto user = userService.getCurrentUser(userDetails.getUsername());
         return ResponseEntity.ok().body(user);
     }
 

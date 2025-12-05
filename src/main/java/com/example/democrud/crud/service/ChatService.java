@@ -7,11 +7,12 @@ import java.util.List;
 
 public interface ChatService {
 
-    ChatMessageResponseDto sendMessage(Long senderId, ChatMessageRequestDto request);
+    ChatMessageResponseDto sendMessage(String username, ChatMessageRequestDto request);
 
     List<ChatMessageResponseDto> getConversation(Long userId, Long otherId);
 
     void markConversationAsRead(Long userId, Long otherId);
+
 }
 
 
