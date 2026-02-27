@@ -4,6 +4,7 @@ package com.example.democrud.crud.controller;
 import com.example.democrud.crud.dto.request.UserRequestDto;
 import com.example.democrud.crud.dto.response.UserResponseDto;
 import com.example.democrud.crud.service.UserService;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -44,10 +45,14 @@ public class UserController {
 
     @GetMapping("/me")
     public ResponseEntity<UserResponseDto> getCurrentUser(@AuthenticationPrincipal UserDetails userDetails) {
-      System.out.println("userDetails: " + userDetails);
         UserResponseDto user = userService.getCurrentUser(userDetails.getUsername());
         return ResponseEntity.ok().body(user);
     }
 
 
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(HttpServletResponse response) {
+        userService.logout(response);
+        return ResponseEntity.noContent().build();
+    }
 }

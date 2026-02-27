@@ -7,6 +7,8 @@ import com.example.democrud.crud.entity.UserEntity;
 import com.example.democrud.crud.repository.UserRepository;
 import com.example.democrud.crud.service.UserService;
 import com.example.democrud.crud.service.mapper.UserMapper;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,6 +35,7 @@ public class UserServiceImpl  implements UserService {
                         .email(request.getEmail())
                         .firstName(request.getFirstName())
                         .lastName(request.getLastName())
+                        .role(request.getRole())
                         .build());
     }
 
@@ -69,5 +72,20 @@ public class UserServiceImpl  implements UserService {
                      .lastName(user.getLastName())
                      .build();
        }
+    }
+
+    @Override
+    public void logout(HttpServletResponse response) {
+        clearCookie("accessToken", response);
+        clearCookie("refreshToken", response);
+    }
+
+    private void clearCookie(String name, HttpServletResponse response) {
+        Cookie cookie = new Cookie(name, null);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(false); // đặt true nếu dùng HTTPS
+        cookie.setPath("/");
+        cookie.setMaxAge(0); // xóa ngay
+        response.addCookie(cookie);
     }
 }

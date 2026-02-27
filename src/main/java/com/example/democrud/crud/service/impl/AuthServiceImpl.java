@@ -56,7 +56,8 @@ public class AuthServiceImpl implements AuthService {
         }
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(request.getUsername());
-        String token = jwtTokenUtil.generateToken(userDetails);
+        String accessToken = jwtTokenUtil.generateToken(userDetails);
+        String refreshToken = jwtTokenUtil.generateRefreshToken(userDetails);
 
         UserEntity userEntity = userRepository.findByEmail(userDetails.getUsername());
 
@@ -66,6 +67,47 @@ public class AuthServiceImpl implements AuthService {
                 .firstName(userEntity.getFirstName())
                 .lastName(userEntity.getLastName())
                 .build();
-        return AuthResponse.builder().accessToken(token).refreshToken(token).user(user).build();
+        return AuthResponse.builder().accessToken(accessToken).refreshToken(refreshToken).user(user).build();
+    }
+
+    @Override
+    public AuthResponse refreshToken(String refreshToken) {
+        // Validate refreshToken
+        if (!jwtTokenUtil.validateRefreshToken(refreshToken)) {
+            throw new ApiException("Invalid or expired refresh token", HttpStatus.UNAUTHORIZED);
+        }
+
+        // Get username from refreshToken
+        String username = jwtTokenUtil.getUsernameFromRefreshToken(refreshToken);
+        if (username == null) {
+            throw new ApiException("Invalid refresh token", HttpStatus.UNAUTHORIZED);
+        }
+
+        // Load user details
+        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+        UserEntity userEntity = userRepository.findByEmail(username);
+        
+        if (userEntity == null) {
+            throw new ApiException("User not found", HttpStatus.UNAUTHORIZED);
+        }
+
+        // Generate new accessToken
+        String newAccessToken = jwtTokenUtil.generateToken(userDetails);
+        
+        // Optionally generate new refreshToken (rotate refresh token)
+        String newRefreshToken = jwtTokenUtil.generateRefreshToken(userDetails);
+
+        UserResponseDto user = UserResponseDto.builder()
+                .id(userEntity.getId())
+                .email(userEntity.getEmail())
+                .firstName(userEntity.getFirstName())
+                .lastName(userEntity.getLastName())
+                .build();
+        
+        return AuthResponse.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(newRefreshToken)
+                .user(user)
+                .build();
     }
 }

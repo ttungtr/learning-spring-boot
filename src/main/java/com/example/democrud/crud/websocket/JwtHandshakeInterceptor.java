@@ -15,6 +15,10 @@ import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.server.HandshakeInterceptor;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.server.ServletServerHttpRequest;
+
 import java.util.Map;
 
 @Component
@@ -71,12 +75,26 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
     }
 
     private String extractToken(ServerHttpRequest request) {
-        // Try Authorization header
+        // 1. Ưu tiên đọc accessToken từ HttpOnly Cookie (giống JwtRequestFilter)
+        if (request instanceof ServletServerHttpRequest servletRequestWrapper) {
+            HttpServletRequest servletRequest = servletRequestWrapper.getServletRequest();
+            Cookie[] cookies = servletRequest.getCookies();
+            if (cookies != null) {
+                for (Cookie cookie : cookies) {
+                    if ("accessToken".equals(cookie.getName())) {
+                        return cookie.getValue();
+                    }
+                }
+            }
+        }
+
+        // 2. Fallback: Authorization header (Bearer token)
         String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             return authHeader.substring(7);
         }
-        // Fallback: token query param
+
+        // 3. Fallback cuối: token query param (?token=...)
         var params = UriComponentsBuilder.fromUri(request.getURI()).build().getQueryParams();
         String tokenParam = params.getFirst("token");
         if (tokenParam != null && !tokenParam.isBlank()) {

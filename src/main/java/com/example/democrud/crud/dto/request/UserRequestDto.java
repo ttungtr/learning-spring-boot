@@ -21,5 +21,7 @@ public class UserRequestDto {
     private String firstName;
     @NotBlank(message = "Lastname can not blank")
     private String lastName;
+    @NotBlank(message = "Role can not blank")
+    private String role;
 
 }

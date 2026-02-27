@@ -58,7 +58,7 @@ public class ChatRawWebSocketHandler extends TextWebSocketHandler {
             ChatMessageResponseDto dto = chatService.sendMessage(username, request);
 
             // Push to recipient's WebSocket sessions
-            sessionManager.pushMessageToUser(dto.getRecipientId(), dto);
+//            sessionManager.pushMessageToUser(dto.getRecipientId(), dto);
 
         } catch (Exception e) {
             log.error("Error handling WebSocket message", e);

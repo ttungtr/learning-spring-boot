@@ -18,19 +18,25 @@ public class JwtTokenUtil {
 
     private String secret = "CiysdJflIcIDolHcW2M/m987cVzo4ssGjVZdw35PSUtbxbYev9fEhRTeJK47VcUclIDLVs3nnqtChDXprMcB3Q==";
     private int jwtExpiration = 86400; // 24 hours
+    private int refreshTokenExpiration = 604800; // 7 days
 
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
-        return createToken(claims, userDetails.getUsername());
+        return createToken(claims, userDetails.getUsername(), jwtExpiration);
     }
 
-    private String createToken(Map<String, Object> claims, String subject) {
+    public String generateRefreshToken(UserDetails userDetails) {
+        Map<String, Object> claims = new HashMap<>();
+        return createToken(claims, userDetails.getUsername(), refreshTokenExpiration);
+    }
+
+    private String createToken(Map<String, Object> claims, String subject, int expiration) {
         var key = Keys.hmacShaKeyFor(secret.getBytes());
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(subject)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration * 1000))
+                .setExpiration(new Date(System.currentTimeMillis() + expiration * 1000))
                 .signWith(key, SignatureAlgorithm.HS512)
                 .compact();
     }
@@ -56,6 +62,38 @@ public class JwtTokenUtil {
     private Claims getAllClaimsFromToken(String token) {
         var key = Keys.hmacShaKeyFor(secret.getBytes());
         return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
+    }
+
+    public Claims getAllClaimsFromTokenIgnoreExpiration(String token) {
+        try {
+            var key = Keys.hmacShaKeyFor(secret.getBytes());
+            return Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            return e.getClaims();
+        }
+    }
+
+    public Boolean validateRefreshToken(String token) {
+        try {
+            Claims claims = getAllClaimsFromTokenIgnoreExpiration(token);
+            Date expiration = claims.getExpiration();
+            return expiration.after(new Date());
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public String getUsernameFromRefreshToken(String token) {
+        try {
+            Claims claims = getAllClaimsFromTokenIgnoreExpiration(token);
+            return claims.getSubject();
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private Boolean isTokenExpired(String token) {

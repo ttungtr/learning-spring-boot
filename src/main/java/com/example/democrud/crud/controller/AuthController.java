@@ -7,15 +7,12 @@ import com.example.democrud.crud.repository.UserRepository;
 import com.example.democrud.crud.security.JwtTokenUtil;
 import com.example.democrud.crud.service.AuthService;
 import com.example.democrud.crud.common.ApiException;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,8 +28,29 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest request) {
-        AuthResponse  response = authService.login(request);
+    public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest request, HttpServletResponse httpResponse) {
+        AuthResponse response = authService.login(request);
+        
+        // Set accessToken vào httpOnly cookie
+        Cookie accessTokenCookie = new Cookie("accessToken", response.getAccessToken());
+        accessTokenCookie.setHttpOnly(true);
+        accessTokenCookie.setSecure(false); // Set true nếu dùng HTTPS
+        accessTokenCookie.setPath("/");
+        accessTokenCookie.setMaxAge(86400); // 24 hours
+        httpResponse.addCookie(accessTokenCookie);
+        
+        // Set refreshToken vào httpOnly cookie
+        Cookie refreshTokenCookie = new Cookie("refreshToken", response.getRefreshToken());
+        refreshTokenCookie.setHttpOnly(true);
+        refreshTokenCookie.setSecure(false); // Set true nếu dùng HTTPS
+        refreshTokenCookie.setPath("/");
+        refreshTokenCookie.setMaxAge(604800); // 7 days
+        httpResponse.addCookie(refreshTokenCookie);
+        
+        // Không trả token trong response body, FE không cần biết
+        response.setAccessToken(null);
+        response.setRefreshToken(null);
+        
         return ResponseEntity.ok(response);
     }
 
@@ -44,6 +62,42 @@ public class AuthController {
         authService.register(request);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refreshToken(
+            @CookieValue(name = "refreshToken", required = false) String refreshToken,
+            HttpServletResponse httpResponse) {
+        if (refreshToken == null || refreshToken.isEmpty()) {
+            throw new ApiException("Refresh token is missing", HttpStatus.UNAUTHORIZED);
+        }
+        
+        AuthResponse response = authService.refreshToken(refreshToken);
+        
+        // Set accessToken mới vào cookie
+        Cookie accessTokenCookie = new Cookie("accessToken", response.getAccessToken());
+        accessTokenCookie.setHttpOnly(true);
+        accessTokenCookie.setSecure(false); // Set true nếu dùng HTTPS
+        accessTokenCookie.setPath("/");
+        accessTokenCookie.setMaxAge(86400); // 24 hours
+        httpResponse.addCookie(accessTokenCookie);
+        
+        // Cập nhật refreshToken mới vào cookie nếu có
+        if (response.getRefreshToken() != null) {
+            Cookie refreshTokenCookie = new Cookie("refreshToken", response.getRefreshToken());
+            refreshTokenCookie.setHttpOnly(true);
+            refreshTokenCookie.setSecure(false); // Set true nếu dùng HTTPS
+            refreshTokenCookie.setPath("/");
+            refreshTokenCookie.setMaxAge(604800); // 7 days
+            httpResponse.addCookie(refreshTokenCookie);
+        }
+        
+        // Không trả token trong response body
+        response.setAccessToken(null);
+        response.setRefreshToken(null);
+        
+        return ResponseEntity.ok(response);
+    }
+
 }
 
 
